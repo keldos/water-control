@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<script src="{{ url_for('static', filename='d3.min.js') }}"></script>
+<script>
+  var chart = function(config = {}) {
+    let {readingList = [], startTime = '', endTime = '', height = 400, width = 460} = config;
+    let margin = {top: 10, right: 30, bottom: 100, left: 60};
+    width = width - margin.left - margin.right;
+    height = height - margin.top - margin.bottom;
+
+    // Append the svg object to the body of the page
+    var svg = d3.select("#chart_area")
+      .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform",
+              "translate(" + margin.left + "," + margin.top + ")");
+
+    var formatDate = d3.timeParse("%Y-%m-%d %H:%M:%S");
+
+    //Read the data
+    d3.json("arduino-log.json").then(function(data) {
+
+      if(startTime.length) {
+        data = data.filter(d => d.timestamp > startTime);
+      }
+      if(endTime.length) {
+        data = data.filter(d => d.timestamp < endTime);
+      }
+      if(readingList.length) {
+        data = data.filter(d => readingList.includes(d.reading));
+      }
+      data = data.filter(d => !isNaN(d.value));
+
+      data.forEach(d => {
+        d.timestamp = formatDate(d.timestamp);
+      });
+
+      // Group the data
+      var sumstat = d3.nest()
+        .key(function(d) { return d.reading;})
+        .entries(data);
+
+      // Add X axis
+      var x = d3.scaleLinear()
+        .domain(d3.extent(data, function(d) { return d.timestamp; }))
+        .range([ 0, width ]);
+      svg.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x)
+              .tickFormat(d3.timeFormat("%b %d %I:%M %p")))
+        .selectAll("text")	
+        .style("text-anchor", "end")
+        .attr("dx", "-.8em")
+        .attr("dy", ".15em")
+        .attr("transform", "rotate(-50)");
+
+      // Add Y axis
+      var y = d3.scaleLinear()
+        .domain([0, d3.max(data, function(d) { return +d.value; })])
+        .range([ height, 0 ]);
+      svg.append("g")
+        .call(d3.axisLeft(y));
+
+      // Color palette
+      var res = sumstat.map(function(d){ return d.key });
+      var color = d3.scaleOrdinal()
+        .domain(res)
+        .range(['#006200','#fc4a12','#1f446f','#9e542f','#fc8312','#ff00ff','#2cfefe',
+                '#fc1312','#00ff00','#9b8a48','#800080','#c0ddc0','#afd7e6']);
+
+      // Draw the line
+      svg.selectAll(".line")
+          .data(sumstat)
+          .enter()
+          .append("path")
+            .attr("fill", "none")
+            .attr("stroke", function(d){ return color(d.key) })
+            .attr("stroke-width", 1.5)
+            .attr("d", function(d){
+              return d3.line()
+                .x(function(d) { return x(d.timestamp); })
+                .y(function(d) { return y(+d.value); })
+                (d.values)
+            });
+
+      // Add one dot in the legend for each name
+      svg.selectAll("mydots")
+        .data(sumstat)
+        .enter()
+        .append("circle")
+          .attr("cx", 100)
+          .attr("cy", function(d,i){ return 100 + i*25})
+          .attr("r", 7)
+          .style("fill", function(d){ return color(d.key)});
+
+      // Add one label in the legend for each name
+      svg.selectAll("mylabels")
+        .data(sumstat)
+        .enter()
+        .append("text")
+          .attr("x", 120)
+          .attr("y", function(d,i){ return 100 + i*25})
+          .style("fill", function(d){ return color(d.key)})
+          .text(function(d){ return d.key })
+          .attr("text-anchor", "left")
+          .style("alignment-baseline", "middle");
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', async function(e) {
+    let readings = [],
+        defaultReadings = ['soil_temperature_a', 'soil_temperature_b', 
+                           'case_temperature', 'case_humidity'],
+        defaultStartTime = '2019-09-15 20:50:53',
+        maxDate = '';
+
+    let response = await fetch('arduino-log.json');
+    let data = await response.json();
+
+    for(i in data) {
+      if(!readings.includes(data[i].reading)) {
+        readings.push(data[i].reading);
+      }
+      if(maxDate < data[i].timestamp) {
+        maxDate = data[i].timestamp;
+      }
+    }
+
+    let ul = document.getElementById('readings');
+    for(i in readings) {
+      let li = document.createElement('li');
+      let label = document.createElement('label');
+      let input = document.createElement('input');
+      let labelText = document.createTextNode(readings[i]);
+      input.type = 'checkbox';
+      input.name = readings[i];
+
+      if(defaultReadings.includes(readings[i])) {
+        input.checked = true;
+      }
+
+      label.appendChild(labelText);
+      label.appendChild(input);
+      li.appendChild(label);
+      ul.appendChild(li);
+    }
+
+    document.getElementsByName('start_time')[0].value = defaultStartTime;
+    document.getElementsByName('end_time')[0].value = maxDate;
+
+    let updateGraph = function() {
+      let selectedReadings = [];
+      let elements = document.querySelectorAll('svg');
+      Array.prototype.forEach.call(elements, function(el, i){
+        el.remove();
+      });
+      elements = document.querySelectorAll('input');
+      Array.prototype.forEach.call(elements, function(el, i){
+        if(el.type === 'checkbox' && el.checked) {
+          selectedReadings.push(el.name);
+        }
+      });
+      chart({
+        readingList: selectedReadings, 
+        startTime: document.getElementsByName('start_time')[0].value,
+        endTime: document.getElementsByName('end_time')[0].value,
+        height: 500,
+        width: document.getElementById('chart_area').clientWidth
+      })
+    };
+
+    let elements = document.querySelectorAll('input');
+    Array.prototype.forEach.call(elements, function(el, i){
+      el.oninput = updateGraph;
+    });
+
+    // Run chart with defaults
+    chart({
+      readingList: defaultReadings, 
+      startTime: defaultStartTime,
+      endTime: maxDate,
+      height: 500,
+      width: document.getElementById('chart_area').clientWidth
+    });
+  });
+</script>
+{% endblock %}
+
+{% block header %}
+  <h1>{% block title %}Arduino Statistics{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+  <div id="chart_area"></div>
+  <div><label>Start Time: <input type="text" name="start_time"></label></div>
+  <div><label>End Time: <input type="text" name="end_time"></label></div>
+  <ul id="readings"></ul>
+{% endblock %}

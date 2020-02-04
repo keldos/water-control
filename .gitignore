@@ -1,0 +1,5 @@
+**/venv/
+**/flaskr.egg-info/
+*.swp
+**/__pycache__/
+*.todo

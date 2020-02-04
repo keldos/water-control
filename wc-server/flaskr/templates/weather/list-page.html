@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}{{ title }}{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <form method="post">
+        <input type="number" name="num_rows" id="num_rows" value="{{ request.form['num_rows'] or numRows }}" />
+        <button type="submit">Submit</button>
+    </form>
+    <table class="greyGridTable">
+        <thead>
+            <tr>
+                {% for colName in colNames %}
+                <th>{{ colName }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                {% for key in row %}
+                <td>{{ key }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

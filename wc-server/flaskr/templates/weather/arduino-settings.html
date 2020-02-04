@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Arduino Settings{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+  <form method="post">
+    <div>
+      <input name="override_time" id="override_time" type="checkbox" {{ 'checked' if row['override_time'] == 'Y' else '' }}>
+      <label for="override_time">override_time</label>
+    </div>
+    <div>
+      <input name="water_enabled" id="water_enabled" type="checkbox" {{ 'checked' if row['water_enabled'] == 'Y' else '' }}>
+      <label for="water_enabled">water_enabled</label>
+    </div>
+    <label for="hour">hour</label>
+    <input name="hour" id="hour" value="{{ row['hour'] }}" required>
+    
+    <label for="minute">minute</label>
+    <input name="minute" id="minute" value="{{ row['minute'] }}" required>
+    
+    <label for="second">second</label>
+    <input name="second" id="second" value="{{ row['second'] }}" required>
+    
+    <label for="min_soil">min_soil</label>
+    <input name="min_soil" id="min_soil" value="{{ row['min_soil'] }}" required>
+    
+    <label for="run_duration">run_duration</label>
+    <input name="run_duration" id="run_duration" value="{{ row['run_duration'] }}" required>
+    
+    <label for="run_times">run_times</label>
+    <input name="run_times" id="run_times" value="{{ row['run_times'] }}" required>
+    
+    <label for="max_chance">max_chance</label>
+    <input name="max_chance" id="max_chance" value="{{ row['max_chance'] }}" required>
+    
+    <label for="total_accumulation">total_accumulation</label>
+    <input name="total_accumulation" id="total_accumulation" value="{{ row['total_accumulation'] }}" required>
+    
+    <input type="submit" value="Save">
+  </form>
+{% endblock %}

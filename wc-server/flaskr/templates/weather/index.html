@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Index{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <ul>
+        <li><a href="/weather/">/weather/</a></li>
+        <li><a href="/weather/arduino-log/">/weather/arduino-log/</a></li>
+        <li><a href="/weather/stats/arduino-log.json">/weather/stats/arduino-log.json</a></li>
+        <li><a href="/weather/stats/">/weather/stats/</a></li>
+        <li><a href="/weather/arduino-settings/">/weather/arduino-settings/</a></li>
+        <li><a href="/weather/log-data/">/weather/log-data/</a></li>
+        <li><a href="/weather/get-settings/">/weather/get-settings/</a></li>
+    </ul>
+{% endblock %}
